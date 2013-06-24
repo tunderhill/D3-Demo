@@ -1,0 +1,43 @@
+#svgcontainer {
+    width:600px;
+    text-align:center;
+}
+
+svg .group {
+    stroke-width: 1;
+    stroke:#555;
+    fill:#FEFEFE;
+}
+
+svg .group_headings {
+    font-size:12px;
+    font-family:Tahoma;
+}
+
+svg .node_prev_rect {
+    fill:white;
+    stroke-width:1;
+    stroke:#000;
+    stroke-dasharray:3,3;
+    opacity:0.6;
+}
+
+svg .node_prev_text {
+    font-size:9px;
+    font-family:Tahoma;
+    opacity:0.6;
+}
+
+svg .node_cur_rect {
+    stroke-width:1;
+    stroke:#000;
+}
+
+svg .node_cur_text {
+    font-size:9px;
+    font-family:Tahoma;    
+}
+
+svg .arrowhead {
+    refX:6;
+}

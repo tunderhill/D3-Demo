@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <link rel="stylesheet" type="text/css" href="d3demo.css">
+    </head>
+    <body>
+        <div id="svgcontainer"></div>
+        <button id="reload" type="button" onclick="window.location.reload()">Reload</button>
+        <script>
+        
+            //-----------------------------------------------------------------------------------------
+            // The following 2 code blocks are generating and sorting some data for us for the purpose
+            // of this demo. These code blocks do not need to be added to OBIEE as the narrative view
+            // will be generating real data for us
+            //-----------------------------------------------------------------------------------------
+
+            // Create some random data - this should normally be generated from OBIEE
+            var data = [];
+            for (i = 1; i <= 20; i++) {
+                var cur_group = Math.floor(1 + Math.random() * 4);
+                var prev_group = Math.floor(1 + Math.random() * 4);
+                var delta = prev_group - cur_group;
+                data.push({
+                    customer: "Customer " + i,
+                    cur_group: cur_group,
+                    prev_group: prev_group,
+                    delta: delta
+                });
+            }
+
+            // Sort the random data by the current group - when run from within OBIEE the sorting will be
+            // controlled by any sorts you define in your answers criteria.
+            data.sort(function (a, b) {
+                if (a.cur_group > b.cur_group) return 1;
+                else if (a.cur_group < b.cur_group) return -1;
+                else return 0;
+            });
+
+            //----------------------------------------------------------------------------
+            // Everthing from this point onwards would be placed in the "postfix" section
+            // of the OBIEE narrative view
+            //----------------------------------------------------------------------------
+
+            // generate some data for our background group rect's
+            var groupCount = 4;
+            var groups = [];
+            for (var i = 1; i <= groupCount; i++) {
+                groups.push(i);
+            }
+
+            // Declarations
+            var paddingTop = 30;
+            var nodeRectHeight = 14;
+            var verticalPadding = 3;
+            var h = (data.length + 1) * (nodeRectHeight + verticalPadding + 1) + paddingTop;
+
+            var w = 550;
+            var nodeRectWidthPadding = 30;
+            var nodeRectWidth = ((w / groupCount) - nodeRectWidthPadding);
+
+            // Append svg, this will contain our D3 visualisation
+            var svg = d3.select("#svgcontainer")
+                .append("svg")
+                .attr("width", w + 1)
+                .attr("height", h);
+
+            // Add Background Group Rectangles   
+            var group = svg.selectAll(".group")
+                .data(groups)
+                .enter()
+                .append("rect")
+                .classed("group",true)
+                .attr("width", w / groupCount)
+                .attr("height", h - paddingTop)
+                .attr("x", function (d, i) {
+                    return (i * w / groupCount) +1;
+                })
+                .attr("y", paddingTop);
+
+            // Add Background Group Rectangle Headings  
+            var group = svg.selectAll(".group_headings")
+                .data(groups)
+                .enter()
+                .append("text")
+                .classed("group_headings",true)
+                .text(function (d, i) {
+                    return "Group " + Math.abs(groupCount - i);
+                })
+                .attr("x", function (d, i) {
+                    return ((i * w / groupCount) + w / groupCount / 3);
+                })
+                .attr("y", 20);
+
+            //----------------------
+            // Previous Months Data
+            //----------------------
+            // Add Svg groups to contain the rects and text for the previous months data       
+            var node_prev_group = svg.selectAll(".node_prev_group")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("class", function (d) {
+                    if (d.delta !== 0) {
+                        // if previous months group is different to this months add the "changed" class. We'll use this
+                        // to determine whether to draw an arrow between last and this months groups
+                        return "node_prev_group changed";
+                    } else {
+                        return "node_prev_group";
+                    }
+                })
+                .attr("transform", function (d, i) {
+                    // Translate x,y. Figure out where to put the svg group in the div
+                    return "translate(" + ((((d.prev_group - groupCount) * -1) * w / groupCount) + (nodeRectWidthPadding / 2)) +
+                                        "," + ((i + (i * (nodeRectHeight + verticalPadding))) + 10 + paddingTop) + ")"; 
+                });
+
+            // append rects to the svg group
+            node_prev_group.append("rect")
+                .classed("node_prev_rect",true)
+                .attr("width", nodeRectWidth)
+                .attr("height", nodeRectHeight)
+                .attr("rx", 6)
+                .attr("ry", 6);
+
+            // append text to the svg group
+            node_prev_group.append("text")
+                .classed("node_prev_text",true)
+                .text(function (d) {
+                    // set the text to the customer name
+                    return d.customer.substring(0, 14);
+                 })
+                .attr("dy", (nodeRectHeight / 2) + 3)
+                .attr("dx", "0.5em");
+
+            //---------------------
+            // Current Months Data  
+            //---------------------
+            // Add Svg groups to contain the rects and text for the current months data            
+            var node_cur_group = svg.selectAll(".node_cur_group")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("class", "node_cur_group")
+                .attr("transform", function (d, i) {
+                    // Translate x,y. Figure out where to put the svg group in the div
+                    return "translate(" + ((((d.prev_group - groupCount) * -1) * w / groupCount) + (nodeRectWidthPadding / 2)) +
+                                        "," + ((i + (i * (nodeRectHeight + verticalPadding))) + 10 + paddingTop) + ")";
+            });
+
+            // append rects to the svg group
+            node_cur_group.append("rect")
+                .classed("node_cur_rect",true)
+                .attr("width", nodeRectWidth)
+                .attr("height", nodeRectHeight)
+                .attr("fill", function (d) {
+                    // assign a colour to the node depending on the current group
+                    var color;
+                    switch (d.cur_group) {
+                        case 1:
+                            color = "#CCFFCC";
+                            break;
+                        case 2:
+                            color = "#FFFF99";
+                            break;
+                        case 3:
+                            color = "#FF9933";
+                            break;
+                        case 4:
+                            color = "#FF0000";
+                            break;
+                    }
+                    return color;
+                })
+                .attr("rx", 6)
+                .attr("ry", 6);
+
+            // append text to the svg group
+            node_cur_group.append("text")
+                .classed("node_cur_text",true)
+                .text(function (d) {
+                    return d.customer.substring(0, 14);
+                })
+                .attr("dy", (nodeRectHeight / 2) + 3)
+                .attr("dx", "0.5em");
+
+            //-------------------------------------------------------------
+            // add lines with arrowheads to indicate direction of movement
+            //-------------------------------------------------------------
+
+            // Append svg marker (arrowhead) to DOM , we'll using it in the next code block 
+            svg.append('svg:defs').append('svg:marker')
+                .classed("arrowhead",true)
+                .attr('id', 'end-arrow')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 6)
+                .attr('markerWidth', 8)
+                .attr('markerHeight', 8)
+                .attr('orient', 'auto')
+                .append('svg:path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'rgb(100,100,100)');
+
+            // Select the .changed class, which selects customers which have changed group since last month 
+            // and append lines with arrow markers to indicate direction of movement. Set the opacity to zero, we'll 
+            // make them visible in the transition callback in the next code block
+            d3.selectAll('.changed')
+                .append("svg:line")
+                .attr("class", "arrow")
+                .attr("x1", function (d) {
+                    // start the line at the edge of the previous months node.
+                    return (d.delta > 0) ? nodeRectWidth : 0;
+                })
+                .attr("y1", nodeRectHeight / 2)
+                .attr("x2", function (d) {
+                    // 
+                    return (d.delta > 0) ? 
+                        // end the line at the edge of the current months node
+                        (nodeRectWidth + nodeRectWidthPadding - 4) + ((Math.abs(d.delta) - 1)) * (w / groupCount) : 
+                        ((-nodeRectWidthPadding - ((Math.abs(d.delta) - 1)) * (w / groupCount)) + 4);
+                })
+                .attr("y2", nodeRectHeight / 2)
+                .style("stroke", "rgb(100,100,100)")
+                .style("marker-end", "url(#end-arrow)")
+                .attr("opacity", "0.0");
+
+            // Animate the current months rects from prev to current
+            node_cur_group.transition()
+                .duration(2200)
+                .ease("bounce")
+                .attr("transform", function (d, i) {
+                    // Trasition the the cur_group node from last months position to this months.
+                    return "translate(" + ((((d.cur_group - groupCount) * -1) * w / groupCount) + (nodeRectWidthPadding / 2)) +  
+                    "," + ((i + (i * (nodeRectHeight + verticalPadding))) + 10 + paddingTop) + ")"; 
+                    })
+                // once all nodes have finished moving make the directional arrows visible
+                .each("end", function () {    
+                    // I love callbacks, show the directional indicators
+                    d3.selectAll(".arrow").attr("opacity", "1");
+            });
+        
+        </script>
+    </body>
+</html>
